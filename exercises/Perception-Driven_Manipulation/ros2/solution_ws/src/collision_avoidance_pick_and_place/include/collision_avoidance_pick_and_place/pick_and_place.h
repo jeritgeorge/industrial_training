@@ -1,24 +1,19 @@
 #ifndef PICK_AND_PLACE_H_
 #define PICK_AND_PLACE_H_
 
-#include <rclcpp/rclcpp.hpp>
-
+#include <ros/ros.h>
+#include <actionlib/client/simple_action_client.h>
 #include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit_msgs/msg/PlanningScene.h>
-#include <moveit/moveit_cpp/moveit_cpp.h>
-#include <moveit/moveit_cpp/planning_component.h>
-#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit_msgs/msg/GetMotionPlan.h>
-#include <moveit/robot_state/conversions.h>
-#include <moveit/kinematic_constraints/utils.h>
-
+#include <moveit_msgs/PlanningScene.h>
 #include <object_manipulation_msgs/GraspHandPostureExecutionAction.h>
-#include <collision_avoidance_pick_and_place/pick_and_place_utilities.h>
-
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
-
+#include <collision_avoidance_pick_and_place/pick_and_place_utilities.h>
+#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <moveit_msgs/GetMotionPlan.h>
+#include <moveit/robot_state/conversions.h>
+#include <moveit/kinematic_constraints/utils.h>
 #include <geometric_shapes/shape_operations.h>
 
 // =============================== aliases ===============================
@@ -29,19 +24,24 @@ typedef boost::shared_ptr<tf::TransformListener> TransformListenerPtr;
 
 namespace collision_avoidance_pick_and_place
 {
-	class PickAndPlace : public rclcpp::Node
+	class PickAndPlace
 	{
 	public:
+	// =============================== constructor =====================================
+		PickAndPlace()
+		{
+
+		}
 
 	// =============================== global members =====================================
 		pick_and_place_config cfg;
+		ros::Publisher marker_publisher;
+		ros::Publisher planning_scene_publisher;
+		ros::ServiceClient target_recognition_client;
+		ros::ServiceClient motion_plan_client;
 		GraspActionClientPtr grasp_action_client_ptr;
 		MoveGroupPtr move_group_ptr;
 		TransformListenerPtr transform_listener_ptr;
-		rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_publisher;
-		rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr planning_scene_publisher;
-		rclcpp::Client<moveit_msgs::msg::GetMotionPlan>::SharedPtr motion_plan_client;
-		rclcpp::Client<collision_avoidance_pick_and_place::msg::GetTargetPose>::SharedPtr target_recognition_client;
 
 	// =============================== Task Functions ===============================
 		void move_to_wait_position();
@@ -76,10 +76,6 @@ namespace collision_avoidance_pick_and_place
 			// publish messages
 			marker_publisher.publish(cfg.MARKER_MESSAGE);
 		}
-
-	protected:
-	// =============================== private members =====================================
-
 
 	};
 }

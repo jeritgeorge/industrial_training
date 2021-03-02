@@ -2,62 +2,11 @@
 
 using namespace collision_avoidance_pick_and_place;
 
-class PickAndPlace : public rclcpp::Node
-{
-    public:
-        PickAndPlace() : Node("pick_and_place_node")
-        {
-            // reading parameters
-            if(application.cfg.init())
-            {
-                RCLCPP_INFO_STREAM(this->get_logger(), "Parameters successfully read");
-            }
-            else
-            {
-                RCLCPP_ERROR_STREAM(this->get_logger(), "Parameters not found");
-                return 0;
-            }
-
-            // marker publisher
-            application.marker_publisher = this->create_publisher<visualization_msgs::msg::Marker>(
-                    application.cfg.MARKER_TOPIC,1);
-
-            // planning scene publisher
-            application.planning_scene_publisher = this->create_publisher<moveit_msgs::msg::PlanningScene>(
-                    application.cfg.PLANNING_SCENE_TOPIC,1);
-
-            // moveit interface
-            application.move_group_ptr = MoveGroupPtr(
-                new moveit::planning_interface::MoveGroupInterface(application.cfg.ARM_GROUP_NAME));
-            application.move_group_ptr->setPlannerId("RRTConnectkConfigDefault");
-
-            // motion plan client
-            application.motion_plan_client = this->create_client<moveit_msgs::msg::GetMotionPlan>
-                (application.cfg.MOTION_PLAN_SERVICE);
-
-            // transform listener
-            application.transform_listener_ptr = TransformListenerPtr(new tf::TransformListener());
-
-            // marker publisher (rviz visualization)
-            application.marker_publisher = this->create_publisher<visualization_msgs::msg::Marker>(
-                    application.cfg.MARKER_TOPIC,1);
-
-            // target recognition client (perception)
-            application.target_recognition_client = this->create_client<collision_avoidance_pick_and_place::msg::GetTargetPose>(
-                    application.cfg.TARGET_RECOGNITION_SERVICE);
-
-            // grasp action client (vacuum gripper)
-            application.grasp_action_client_ptr = this->create_client<GraspActionClientPtr>(
-                    this, application.cfg.GRASP_ACTION_NAME, true));
-
-        }
-}
-
 // =============================== Main Thread ===============================
 int main(int argc,char** argv)
 {
-  geometry_msgs::msg::Pose box_pose;
-  std::vector<geometry_msgs::msg::Pose> pick_poses, place_poses;
+  geometry_msgs::Pose box_pose;
+  std::vector<geometry_msgs::Pose> pick_poses, place_poses;
 
   /* =========================================================================================*/
   /*	INITIALIZING ROS NODE
@@ -68,14 +17,52 @@ int main(int argc,char** argv)
   /* =========================================================================================*/
 
   // ros initialization
-  rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<PickAndPlace>());
-
+  ros::init(argc,argv,"pick_and_place_node");
+  ros::NodeHandle nh;
   ros::AsyncSpinner spinner(2);
   spinner.start();
 
   // creating pick and place application instance
   PickAndPlace application;
+
+  // reading parameters
+  if(application.cfg.init())
+  {
+    ROS_INFO_STREAM("Parameters successfully read");
+  }
+  else
+  {
+    ROS_ERROR_STREAM("Parameters not found");
+    return 0;
+  }
+
+  // marker publisher
+  application.marker_publisher = this->create_publisher<visualization_msgs::msg::Marker>(
+		  application.cfg.MARKER_TOPIC,1);
+
+  // planning scene publisher
+  application.planning_scene_publisher = this->create_publisher<moveit_msgs::msg::PlanningScene>(
+  		application.cfg.PLANNING_SCENE_TOPIC,1);
+
+  // moveit interface
+  application.move_group_ptr = MoveGroupPtr(
+      new moveit::planning_interface::MoveGroupInterface(application.cfg.ARM_GROUP_NAME));
+  application.move_group_ptr->setPlannerId("RRTConnectkConfigDefault");
+
+  // motion plan client
+  application.motion_plan_client = this->create_client<moveit_msgs::srv::GetMotionPlan>(application.cfg.MOTION_PLAN_SERVICE);
+
+  // transform listener
+  application.transform_listener_ptr = TransformListenerPtr(new tf::TransformListener());
+
+  // target recognition client (perception)
+  application.target_recognition_client = this->create_client<collision_avoidance_pick_and_place::srv::GetTargetPose>(
+		  application.cfg.TARGET_RECOGNITION_SERVICE);
+
+  // grasp action client (vacuum gripper)
+  application.grasp_action_client_ptr = GraspActionClientPtr(
+		  new GraspActionClient(application.cfg.GRASP_ACTION_NAME,true));
+
 
   // waiting to establish connections
   while(ros::ok() &&
