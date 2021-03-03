@@ -1,6 +1,6 @@
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud_conversion.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/PointCloud2.hpp>
+#include <sensor_msgs/point_cloud_conversion.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -24,7 +24,7 @@ const std::string POINT_CLOUD_TOPIC = "generated_cloud";
 // constants
 
 
-class GeneratePointCloud
+class GeneratePointCloud : public rclcpp::Node
 {
 	typedef pcl::PointCloud<pcl::PointXYZ> Cloud;
 	struct Description
@@ -35,21 +35,18 @@ class GeneratePointCloud
 	};
 
 	public:
-		GeneratePointCloud()
-		{
-		}
-		
-		bool init()
+		GeneratePointCloud() : Node("generate_point_cloud_node")
 		{
 			XmlRpc::XmlRpcValue list;
-			ros::NodeHandle ph("~");
-			
-			// loading frame id
-			if(!ph.getParam(FRAME_ID,frame_id_))
-			{
-				ROS_ERROR_STREAM("failed to load frame id");
-			}
 
+			cloud_publisher_ = this->create_publisher<sensor_msgs::PointCloud2>(POINT_CLOUD_TOPIC, 1);
+			cloud_timer_ = this->create_wall_timer(500ms, std::bind(&GeneratePointCloud::cloud_callback, this));
+
+
+			if(!get_parameter(FRAME_ID, frame_id_))
+			{
+				RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to load frame id");
+			}
 
 			// parameter numeric_fiels
 			std::map<std::string,double> numeric_fields;
@@ -64,8 +61,7 @@ class GeneratePointCloud
 			numeric_fields.insert(std::make_pair("h",0));
 			numeric_fields.insert(std::make_pair("resolution",0));
 
-			// loading point cloud descriptions
-			if(ph.getParam(CLOUD_DESCRIPTIONS,list))
+			if(get_parameter(CLOUD_DESCRIPTIONS, list))
 			{
 				if(list.getType() == XmlRpc::XmlRpcValue::TypeArray)
 				{
@@ -85,11 +81,10 @@ class GeneratePointCloud
 							}
 							else
 							{
-								ROS_ERROR_STREAM("Point Cloud description entry is missing field '"<<i->first<<"'");
+								RCLCPP_ERROR_STREAM(this->get_logger(), "Point Cloud description entry is missing field '"<<i->first<<"'");
 								return false;
 							}
 						}
-
 
 						// populating structure
 						Description d;
@@ -103,39 +98,22 @@ class GeneratePointCloud
 					}
 
 				}
-			}		
-
-			return true;
-		}
-
-		void run()
-		{
-			ros::NodeHandle nh;
-			ros::Publisher cloud_publisher = nh.advertise<sensor_msgs::PointCloud2>(POINT_CLOUD_TOPIC,1);
-
-			if(init())
-			{
-				genenerate_cloud();
-
-				sensor_msgs::PointCloud2 msg;
-				pcl::toROSMsg(full_cloud_,msg);
-
-				ros::Duration loop_duration(0.4f);
-				while(ros::ok())
-				{
-					msg.header.stamp = ros::Time::now() - loop_duration;
-					cloud_publisher.publish(msg);
-					loop_duration.sleep();
-
-				}
 			}
-
 		}
 
 	protected:
 
+		void cloud_callback()
+		{
+			generate_cloud();
 
-		void genenerate_cloud()
+			sensor_msgs::PointCloud2 msg;
+			pcl::toROSMsg(full_cloud_, msg);
+			msg.header.stamp = this->get_clock().now();
+			cloud_publisher_->publish(msg)
+		}
+
+		void generate_cloud()
 		{
 			full_cloud_.clear();
 			for(unsigned int i = 0; i < cloud_descriptions_.size() ; i++)
@@ -257,16 +235,15 @@ class GeneratePointCloud
 		std::string frame_id_;
 		Cloud full_cloud_;
 		float resolution_;
+		rclcpp::TimerBase::SharedPtr cloud_timer_;
+    	rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_publisher_;
 
-
-	
 };
 
 int main(int argc,char** argv)
 {
-	ros::init(argc,argv,"generate_point_cloud_node");
-
-	GeneratePointCloud g;
-	g.run();
+	rclcpp::init(argc, argv);
+	rclcpp::spin(std::make_shared<GeneratePointCloud>());
+	rclcpp::shutdown();
 	return 0;
 }
