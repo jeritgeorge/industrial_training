@@ -3,7 +3,7 @@ import argparse
 import sys
 import shlex
 import roslib; roslib.load_manifest('collision_avoidance_pick_and_place')
-import rospy
+import rclpy
 import tf
 import shape_msgs
 import moveit_msgs
@@ -11,11 +11,19 @@ import std_msgs.msg
 from moveit_msgs.msg import CollisionObject
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import Pose
+from rclpy.node import Node
+
 
 
 #constants
 COLLISION_OBJECT_TOPIC = "collision_object";
 PACKAGE_PATH = roslib.packages.get_pkg_dir('collision_avoidance_pick_and_place')
+
+class CollisionObjectPublisher(Node):
+
+	def __init__(self):
+		super().__init__('collision_object_publisher')
+		self.publisher_ = self.create_publisher(CollisionObject, COLLISION_OBJECT_TOPIC, 10)
 
 def create_collision_object(shape_type,pos,size,frame_id,op,object_id):
 
@@ -54,10 +62,10 @@ def parse_arguments(args):
 if __name__ == "__main__":
 
 
-	rospy.init_node("collision_object_publisher")
+	rclpy.init(args=args)
 
 	# create publisher
-	collision_publisher = rospy.Publisher(COLLISION_OBJECT_TOPIC,CollisionObject)
+	collision_publisher = CollisionObjectPublisher()
 
 	# argument parser
 	parser=argparse.ArgumentParser(description="Collision Object description")
@@ -70,24 +78,25 @@ if __name__ == "__main__":
 	parser.add_argument("-o","--operation",type=int,help="operations: ADD=0, DELETE=1 ",choices=[0,1])
 	parser.add_argument("-i","--id",type=str,help="object id")
 	parser.add_argument("-y","--file",type=str,help="file with object entries")
-	parser.add_argument("-l","--loop",action='store_true',help="loop and accept new entries from terminal")	
+	parser.add_argument("-l","--loop",action='store_true',help="loop and accept new entries from terminal")
 	parser.add_argument("-q","--quit",action='store_true',help="quit script")
 
 	args = parser.parse_args()
 
 	# wait for subscribers
 	max_attempts = 20
-	num_attempts = 0	
+	num_attempts = 0
 	while (collision_publisher.get_num_connections() < 1 ):
-		rospy.loginfo("waiting for subscribers to %s topic" % (COLLISION_OBJECT_TOPIC))
-		rospy.sleep(2.0)
+		rclpy.loginfo("waiting for subscribers to %s topic" % (COLLISION_OBJECT_TOPIC))
+		rclpy.sleep(2.0)
 		num_attempts= num_attempts+1
 
-		if num_attempts > max_attempts or rospy.is_shutdown():
-			rospy.logerr("No subscribers for topic %s found" % (COLLISION_OBJECT_TOPIC))
+		if num_attempts > max_attempts or rclpy.is_shutdown():
+			rclpy.logerr("No subscribers for topic %s found" % (COLLISION_OBJECT_TOPIC))
 			sys.exit()
 
-	rospy.loginfo("Subscribers for topic %s found" % (COLLISION_OBJECT_TOPIC))
+	rclpy.loginfo("Subscribers for topic %s found" % (COLLISION_OBJECT_TOPIC))
+
 
 	if args.loop:
 
@@ -117,7 +126,7 @@ if __name__ == "__main__":
 
 		if args.file != None:
 			fname=PACKAGE_PATH + '/' + args.file
-			rospy.loginfo("Opening file %s" %(fname))
+			rclpy.loginfo("Opening file %s" %(fname))
 			f = open(fname)
 			for line in f:
 				args = parser.parse_args(line.split(' '))
