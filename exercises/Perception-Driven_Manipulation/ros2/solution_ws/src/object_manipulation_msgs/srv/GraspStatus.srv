@@ -6,7 +6,7 @@
 # for each arm
 
 # the grasp that we are checking 
-moveit_msgs/Grasp grasp
+manipulation_msgs/Grasp grasp
 
 ---
 

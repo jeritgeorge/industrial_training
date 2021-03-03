@@ -11,7 +11,7 @@ geometry_msgs::Pose collision_avoidance_pick_and_place::PickAndPlace::detect_box
   //ROS_ERROR_STREAM("detect_box_pick is not implemented yet.  Aborting."); exit(1);
 
   // creating shape for recognition
-  shape_msgs::SolidPrimitive shape;
+  shape_msgs::msg::SolidPrimitive shape;
   shape.type = shape_msgs::SolidPrimitive::BOX;
   shape.dimensions.resize(3);
   shape.dimensions[0] = cfg.BOX_SIZE.getX();

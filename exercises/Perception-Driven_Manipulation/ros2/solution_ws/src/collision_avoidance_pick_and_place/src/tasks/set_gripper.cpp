@@ -12,14 +12,14 @@ void collision_avoidance_pick_and_place::PickAndPlace::set_gripper(bool do_grasp
   //ROS_ERROR_STREAM("set_gripper is not implemented yet.  Aborting."); exit(1);
 
   // task variables
-  object_manipulation_msgs::msg::GraspHandPostureExecutionGoal grasp_goal;
+  object_manipulation_msgs::GraspHandPostureExecutionGoal grasp_goal;
   bool success;
 
   // set the corresponding gripper action in the "grasp_goal" object.
   if (do_grasp)
-    grasp_goal.goal = object_manipulation_msgs::msg::GraspHandPostureExecutionGoal::GRASP;
+    grasp_goal.goal = object_manipulation_msgs::GraspHandPostureExecutionGoal::GRASP;
   else
-    grasp_goal.goal = object_manipulation_msgs::msg::GraspHandPostureExecutionGoal::RELEASE;
+    grasp_goal.goal = object_manipulation_msgs::GraspHandPostureExecutionGoal::RELEASE;
 
   /* Fill Code:
    * Goal:

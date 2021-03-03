@@ -93,7 +93,7 @@ protected:
 	  ros::Publisher pub_;
 
 	  // messages
-	  soem_beckhoff_drivers::DigitalMsg output_msg_;
+	  soem_beckhoff_drivers::msg::DigitalMsg output_msg_;
 
 	  bool validateRequest(const robot_io::DigitalOutputUpdate::Request &req)
 	  {

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="3">
+<package>
   <name>collision_avoidance_pick_and_place</name>
   <version>0.0.0</version>
   <description>

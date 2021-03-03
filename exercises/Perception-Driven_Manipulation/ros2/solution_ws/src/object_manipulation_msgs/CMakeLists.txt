@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 	trajectory_msgs
 	sensor_msgs
 	shape_msgs
-	moveit_msgs)
+	manipulation_msgs)
 
 #######################################
 ## Declare ROS messages and services ##
@@ -37,7 +37,7 @@ generate_messages(DEPENDENCIES 	actionlib_msgs
 	trajectory_msgs
 	sensor_msgs
 	shape_msgs
-	moveit_msgs)
+	manipulation_msgs)
 
 ###################################
 ## catkin specific configuration ##
@@ -57,6 +57,7 @@ catkin_package(
 		sensor_msgs
 		trajectory_msgs
 		sensor_msgs
+		household_objects_database_msgs
 		shape_msgs
-		moveit_msgs
+		manipulation_msgs
 )

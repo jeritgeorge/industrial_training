@@ -1,16 +1,7 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 2.8.3)
 project(collision_avoidance_pick_and_place)
 add_definitions (-std=c++11)
-
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(moveit_common REQUIRED)
-find_package(moveit_ros_planning_interface REQUIRED)
-find_package(object_manipulation_msgs REQUIRED)
-find_package(robot_io REQUIRED)
-
-find_package(catkin REQUIRED COMPONENTS
+find_package(catkin REQUIRED COMPONENTS 
   roscpp
   moveit_msgs
   moveit_ros_manipulation
@@ -44,7 +35,7 @@ add_service_files(
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-	DEPENDENCIES
+	DEPENDENCIES   
 		std_msgs
 		shape_msgs
 		pcl_msgs)
@@ -84,7 +75,7 @@ add_executable(generate_cloud_node src/nodes/generate_point_cloud.cpp)
 add_dependencies(generate_cloud_node ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(generate_cloud_node ${catkin_LIBRARIES})
 
-add_executable(pick_and_place_node
+add_executable(pick_and_place_node 
 	src/nodes/pick_and_place_node.cpp
 	src/tasks/move_to_wait_position.cpp
 	src/tasks/set_gripper.cpp
@@ -94,11 +85,11 @@ add_executable(pick_and_place_node
 	src/tasks/create_pick_moves.cpp
   src/tasks/create_place_moves.cpp
 	src/tasks/pickup_box.cpp
-	src/tasks/place_box.cpp
+	src/tasks/place_box.cpp	
 	src/tasks/create_motion_plan.cpp
 	src/utilities/pick_and_place_utilities.cpp)
 add_dependencies(pick_and_place_node ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(pick_and_place_node ${catkin_LIBRARIES})
 
 
-
+	
