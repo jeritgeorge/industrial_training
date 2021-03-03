@@ -45,7 +45,7 @@ const double BOX_SCALE = 1.2f;
 const double ANGLE_TOLERANCE = 0.1f* (M_PI/180.0f);
 
 
-class TargetRecognition
+class TargetRecognition : public rclcpp::Node
 {
 public:
 	TargetRecognition():
@@ -62,34 +62,31 @@ public:
 
 	bool init()
 	{
-		ros::NodeHandle nh;
-		ros::NodeHandle ph("~");
-
 		// read parameters
-		if(ph.getParam("box_filter_scale",box_filter_scale_) &&
-				ph.getParam("angle_tolerance",angle_tolerance_))
+		if(this->get_parameter("box_filter_scale",box_filter_scale_) &&
+				this->get_parameter("angle_tolerance",angle_tolerance_))
 		{
-			ROS_INFO_STREAM("target recognition read parameters successfully");
+			RCLCPP_INFO_STREAM(this->get_logger(), "target recognition read parameters successfully");
 		}
 		else
 		{
-			ROS_WARN_STREAM("target recognition did not find one or more parameters, using defaults");
+			RCLCPP_WARN_STREAM(this->get_logger(), "target recognition did not find one or more parameters, using defaults");
 		}
 
 		// initializing service server
-		target_detection_server = nh.advertiseService(TARGET_RECOGNITION_SERVICE,&TargetRecognition::target_recognition_callback,this);
+		target_detection_server = this->create_service(TARGET_RECOGNITION_SERVICE,&TargetRecognition::target_recognition_callback,this);
 
 		// initializing publisher
-		filtered_cloud_publisher = nh.advertise<sensor_msgs::PointCloud2>(FILTERED_CLOUD_TOPIC,1);
+		filtered_cloud_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(FILTERED_CLOUD_TOPIC,1);
 
 		// initializing subscriber
-		point_cloud_subscriber = nh.subscribe(SENSOR_CLOUD_TOPIC,1,&TargetRecognition::point_cloud_callback,this);
+		point_cloud_subscriber = this->create_subscription(SENSOR_CLOUD_TOPIC,1,&TargetRecognition::point_cloud_callback,this);
 
 		// initializing transform listener
 		transform_listener_ptr = TransformListenerPtr(new tf::TransformListener(nh,ros::Duration(1.0f)));
 
 		// initializing cloud messages
-		filtered_cloud_msg_ = sensor_msgs::PointCloud2();
+		filtered_cloud_msg_ = sensor_msgs::msg::PointCloud2();
 
 		return true;
 
@@ -98,25 +95,24 @@ public:
 	void run()
 	{
 
-		while(ros::ok())
+		while(rclcpp::ok())
 		{
-			ros::Duration(0.2f).sleep();
-			ros::spinOnce();
+			rclcpp::Duration(0.2f).sleep();
+			rclcpp::spinOnce();
 		}
 	}
 
 protected:
 
-	bool grab_sensor_snapshot(sensor_msgs::PointCloud2& msg)
+	bool grab_sensor_snapshot(sensor_msgs::msg::PointCloud2& msg)
 	{
 		// grab sensor data snapshot
-		ros::NodeHandle nh;
-		sensor_msgs::PointCloud2ConstPtr msg_ptr =
-				ros::topic::waitForMessage<sensor_msgs::PointCloud2>(SENSOR_CLOUD_TOPIC,nh,
-						ros::Duration(5.0f));
+		sensor_msgs::msg::PointCloud2ConstPtr msg_ptr =
+				rclcpp::waitForMessage<sensor_msgs::msg::PointCloud2>(SENSOR_CLOUD_TOPIC,nh,
+						rclcpp::Duration(5.0f));
 
 		// check for empty message
-		if(msg_ptr != sensor_msgs::PointCloud2ConstPtr())
+		if(msg_ptr != sensor_msgs::msg::PointCloud2ConstPtr())
 		{
 
 			msg = *msg_ptr;
@@ -130,8 +126,8 @@ protected:
 		sensor_cloud_msg_ = sensor_msgs::PointCloud2(*msg);
 	}
 
-	bool target_recognition_callback(collision_avoidance_pick_and_place::GetTargetPose::Request& req,
-			collision_avoidance_pick_and_place::GetTargetPose::Response& res)
+	bool target_recognition_callback(const std::shared_ptr<collision_avoidance_pick_and_place::srv::GetTargetPose::Request> req,
+			std::shared_ptr<collision_avoidance_pick_and_place::srv::GetTargetPose::Response> res)
 	{
 		// transforms
 		tf::StampedTransform world_to_sensor_tf;
@@ -140,14 +136,14 @@ protected:
 		tf::Vector3 box_pick_position;
 
 		// updating global variables
-		box_length_ = req.shape.dimensions[0];
-		box_width_ = req.shape.dimensions[1];
-		box_height_ = req.shape.dimensions[2];
-		world_frame_id_ = req.world_frame_id;
-		ar_frame_id_ = req.ar_tag_frame_id;
+		box_length_ = req->shape.dimensions[0];
+		box_width_ = req->shape.dimensions[1];
+		box_height_ = req->shape.dimensions[2];
+		world_frame_id_ = req->world_frame_id;
+		ar_frame_id_ = req->ar_tag_frame_id;
 
 		// get point cloud message
-		sensor_msgs::PointCloud2 msg = sensor_cloud_msg_;
+		sensor_msgs::msg::PointCloud2 msg = sensor_cloud_msg_;
 		if(msg.data.size() == 0)
 		{
 				ROS_ERROR_STREAM("Cloud message is invalid, returning detection failure");
@@ -185,7 +181,7 @@ protected:
 			double height;
 			if(!detect_box_height(*sensor_cloud_ptr,world_to_ar_tf,height) )
 			{
-				ROS_ERROR_STREAM("Target height detection failed");
+				RCLCPP_ERROR_STREAM(this->get_logger(), "Target height detection failed");
 				res.succeeded = false;
 				return true;
 			}
@@ -201,10 +197,10 @@ protected:
 					world_to_box_pick_tf,*sensor_cloud_ptr,*filtered_cloud_ptr);
 
 			// filter box at requested locations
-			for(unsigned int i =0;i < req.remove_at_poses.size();i++)
+			for(unsigned int i =0;i < req->remove_at_poses.size();i++)
 			{
 				tf::Transform world_to_box;
-				tf::poseMsgToTF(req.remove_at_poses[i],world_to_box);
+				tf::poseMsgToTF(req->remove_at_poses[i],world_to_box);
 
 				// copying last filter cloud
 				pcl::copyPointCloud(*filtered_cloud_ptr,*sensor_cloud_ptr);
@@ -221,8 +217,8 @@ protected:
 			pcl::toROSMsg(*filtered_cloud_ptr,filtered_cloud_msg_);
 
 			// populating response
-			tf::poseTFToMsg(world_to_box_pick_tf,res.target_pose);
-			res.succeeded = true ;
+			tf::poseTFToMsg(world_to_box_pick_tf,res->target_pose);
+			res->succeeded = true ;
 
 			// publishing cloud
 			filtered_cloud_msg_.header.stamp = ros::Time::now()-ros::Duration(0.5f);
@@ -230,7 +226,7 @@ protected:
 		}
 		else
 		{
-			res.succeeded = false;
+			res->succeeded = false;
 		}
 
 		return true;
@@ -245,8 +241,8 @@ protected:
 		// find ar tag transform
 		try
 		{
-			transform_listener_ptr->waitForTransform(target,source,ros::Time::now(),ros::Duration(4.0f));
-			transform_listener_ptr->lookupTransform(target,source,ros::Time::now() - ros::Duration(0.2f),trg_to_src_stamped);
+			transform_listener_ptr->waitForTransform(target,source,rclcpp::Time::now(),rclcpp::Duration(4.0f));
+			transform_listener_ptr->lookupTransform(target,source,rclcpp::Time::now() - rclcpp::Duration(0.2f),trg_to_src_stamped);
 
 			// copying transform data
 			trg_to_src_tf.setRotation( trg_to_src_stamped.getRotation());
@@ -255,17 +251,17 @@ protected:
 		}
 		catch(tf::LookupException &e)
 		{
-			ROS_ERROR_STREAM("transform lookup for '"<<ar_frame_id_<<"' failed");
+			RCLCPP_ERROR_STREAM(this->get_logger(), "transform lookup for '"<<ar_frame_id_<<"' failed");
 			return false;
 		}
 		catch(tf::ExtrapolationException &e)
 		{
-			ROS_ERROR_STREAM("transform lookup for '"<<ar_frame_id_<<"' failed");
+			RCLCPP_ERROR_STREAM(this->get_logger(), "transform lookup for '"<<ar_frame_id_<<"' failed");
 			return false;
 		}
 		catch(tf::TransformException &e)
 		{
-			ROS_ERROR_STREAM("transform lookup for '"<<ar_frame_id_<<"' failed");
+			RCLCPP_ERROR_STREAM(this->get_logger(), "transform lookup for '"<<ar_frame_id_<<"' failed");
 			return false;
 		}
 
@@ -301,7 +297,7 @@ protected:
 		int count = pcl::compute3DCentroid(*filtered_cloud_ptr,centroid);
 		height = centroid[2];
 
-		ROS_INFO_STREAM("Detected height is: "<<centroid[2]);
+		RCLCPP_INFO_STREAM(this->get_logger(), "Detected height is: "<<centroid[2]);
 
 		// return z value
 		return count != 0;
@@ -339,13 +335,13 @@ protected:
 	pick_surface_cloud_ptr->points[4].y = 0.5f*box_filter_scale_*box_width_;
 	pick_surface_cloud_ptr->points[4].z = 0;
 
-	ROS_INFO_STREAM("Points in surface: "<<pick_surface_cloud_ptr->points.size());
+	RCLCPP_INFO_STREAM(this->get_logger(), "Points in surface: "<<pick_surface_cloud_ptr->points.size());
 
 	// finding angle between world z and box z vectors
 	tf::Vector3 z_world_vect(0,0,1);
 	tf::Vector3 z_box_vect = world_to_box_pick_tf.getBasis().getColumn(2);
 	double angle  = z_world_vect.angle(z_box_vect);
-	ROS_INFO_STREAM("Angle between z vectors : "<<angle);
+	RCLCPP_INFO_STREAM(this->get_logger(), "Angle between z vectors : "<<angle);
 
 
 	// transforming cloud to match orientation of box (rectify in the z direction)
@@ -354,7 +350,7 @@ protected:
 	Eigen::Affine3d eigen3d;
 	if(std::abs(angle) > angle_tolerance_)
 	{
-		ROS_INFO_STREAM("Rectifying pick pose z direction");
+		RCLCPP_INFO_STREAM(this->get_logger(), "Rectifying pick pose z direction");
 		world_to_rectified_box_tf.setRotation(world_to_box_pick_tf.getRotation() * tf::Quaternion(axis,-angle)) ;
 	}
 
@@ -368,7 +364,7 @@ protected:
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
 	pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
 
-	ROS_INFO_STREAM("Sensor cloud points: "<<sensor_cloud_ptr->points.size());
+	RCLCPP_INFO_STREAM(this->get_logger(), "Sensor cloud points: "<<sensor_cloud_ptr->points.size());
 
 	tf::Vector3 viewpoint = world_to_sensor_tf.getOrigin();
 	prism.setInputCloud(sensor_cloud_ptr);
@@ -384,7 +380,7 @@ protected:
 	extract.setNegative(true);
 	extract.filter(filtered_cloud);
 
-	ROS_INFO_STREAM("Filtered cloud points: "<<filtered_cloud.points.size());
+	RCLCPP_INFO_STREAM(this->get_logger(), "Filtered cloud points: "<<filtered_cloud.points.size());
 
 }
 
@@ -396,21 +392,21 @@ protected:
 	float box_width_;
 	float box_length_;
 	float box_height_;
-	sensor_msgs::PointCloud2 filtered_cloud_msg_;
-	sensor_msgs::PointCloud2 sensor_cloud_msg_;
+	sensor_msgs::msg::PointCloud2 filtered_cloud_msg_;
+	sensor_msgs::msg::PointCloud2 sensor_cloud_msg_;
 
 	// ros parameter
 	double box_filter_scale_;
 	double angle_tolerance_;
 
 	// ros service server
-	ros::ServiceServer target_detection_server;
+	rclcpp::Service<collision_avoidance_pick_and_place::srv::GetTargetPose>::SharedPtr target_detection_server;
 
 	// ros subscriber
-	ros::Subscriber point_cloud_subscriber;
+	rclcpp::Subscriber<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_subscriber;
 
 	// ros publishers and subscribers
-	ros::Publisher filtered_cloud_publisher;
+	rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr filtered_cloud_publisher;
 
 	// transform listener
 	TransformListenerPtr transform_listener_ptr;
@@ -419,13 +415,9 @@ protected:
 // main program
 int main(int argc,char** argv)
 {
-	ros::init(argc,argv,"target_recognition_node");
-
-	TargetRecognition tg;
-	if(tg.init())
-	{
-		tg.run();
-	}
+	rclcpp::init(argc,argv);
+	rclcpp::spin(std::make_shared<TargetRecognition>())
+	rclcpp::shutdown();
 
 	return 0;
 }
