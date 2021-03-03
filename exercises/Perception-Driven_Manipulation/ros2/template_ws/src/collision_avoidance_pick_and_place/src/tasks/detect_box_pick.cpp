@@ -8,10 +8,10 @@
 */
 geometry_msgs::Pose collision_avoidance_pick_and_place::PickAndPlace::detect_box_pick()
 {
-  ROS_ERROR_STREAM("detect_box_pick is not implemented yet.  Aborting."); exit(1);
+  RCLCPP_ERROR_STREAM(this->get_logger(), "detect_box_pick is not implemented yet.  Aborting."); exit(1);
 
   // creating shape for recognition
-  shape_msgs::SolidPrimitive shape;
+  shape_msgs::msg::SolidPrimitive shape;
   shape.type = shape_msgs::SolidPrimitive::BOX;
   shape.dimensions.resize(3);
   shape.dimensions[0] = cfg.BOX_SIZE.getX();
@@ -36,31 +36,31 @@ geometry_msgs::Pose collision_avoidance_pick_and_place::PickAndPlace::detect_box
    * - Assign the target_pose in the response to the box_pose variable in
    * 	order to save the results.
    */
-  geometry_msgs::Pose box_pose;
+  geometry_msgs::msg::Pose box_pose;
   if(/* ========  ENTER CODE HERE ======== (replace "true")*/ true)
   {
     if(srv.response.succeeded)
     {
       /* ========  ENTER CODE HERE ======== */
-      ROS_INFO_STREAM("target recognition succeeded");
+      RCLCPP_INFO_STREAM(this->get_logger(), "target recognition succeeded");
     }
     else
     {
-      ROS_ERROR_STREAM("target recognition failed");
+      RCLCPP_ERROR_STREAM(this->get_logger(), "target recognition failed");
       exit(0);
 
     }
   }
   else
   {
-    ROS_ERROR_STREAM("Service call for target recognition failed with response '"<<
+    RCLCPP_ERROR_STREAM(this->get_logger(), "Service call for target recognition failed with response '"<<
                     (srv.response.succeeded ?"SUCCESS":"FAILURE")
                     <<"', exiting");
     exit(0);
   }
 
   // updating box marker for visualization in rviz
-  visualization_msgs::Marker marker = cfg.MARKER_MESSAGE;
+  visualization_msgs::msg::Marker marker = cfg.MARKER_MESSAGE;
   cfg.MARKER_MESSAGE.header.frame_id = cfg.WORLD_FRAME_ID;
   cfg.MARKER_MESSAGE.pose = box_pose;
   cfg.MARKER_MESSAGE.pose.position.z = box_pose.position.z - 0.5f*cfg.BOX_SIZE.z();

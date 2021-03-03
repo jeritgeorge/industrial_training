@@ -17,12 +17,12 @@
 
 std::vector<geometry_msgs::Pose> collision_avoidance_pick_and_place::PickAndPlace::create_place_moves()
 {
-  ROS_ERROR_STREAM("create_place_moves is not implemented yet.  Aborting."); exit(1);
+  RCLCPP_ERROR_STREAM(this->get_logger(), "create_place_moves is not implemented yet.  Aborting."); exit(1);
 
   // task variables
   tf::Transform world_to_tcp_tf;
   tf::StampedTransform tcp_to_wrist_tf;
-  std::vector<geometry_msgs::Pose> tcp_place_poses, wrist_place_poses;
+  std::vector<geometry_msgs::msg::Pose> tcp_place_poses, wrist_place_poses;
 
 
   /* Fill Code:
@@ -79,8 +79,8 @@ std::vector<geometry_msgs::Pose> collision_avoidance_pick_and_place::PickAndPlac
   /* ========  ENTER CODE HERE ======== */
 
   // printing results
-  ROS_INFO_STREAM("tcp position at place: " << "[" << world_to_tcp_tf.getOrigin().getX() << ", " << world_to_tcp_tf.getOrigin().getY() << ", " << world_to_tcp_tf.getOrigin().getZ() << "]");
-  ROS_INFO_STREAM("wrist position at place: "<<wrist_place_poses[1].position);
+  RCLCPP_INFO_STREAM(this->get_logger(), "tcp position at place: " << "[" << world_to_tcp_tf.getOrigin().getX() << ", " << world_to_tcp_tf.getOrigin().getY() << ", " << world_to_tcp_tf.getOrigin().getZ() << "]");
+  RCLCPP_INFO_STREAM(this->get_logger(), "wrist position at place: "<<wrist_place_poses[1].position);
 
   return wrist_place_poses;
 }

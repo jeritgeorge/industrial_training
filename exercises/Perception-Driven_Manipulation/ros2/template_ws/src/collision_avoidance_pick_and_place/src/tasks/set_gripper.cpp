@@ -9,7 +9,7 @@
 */
 void collision_avoidance_pick_and_place::PickAndPlace::set_gripper(bool do_grasp)
 {
-  ROS_ERROR_STREAM("set_gripper is not implemented yet.  Aborting."); exit(1);
+  RCLCPP_ERROR_STREAM(this->get_logger(), "set_gripper is not implemented yet.  Aborting."); exit(1);
 
   // task variables
   object_manipulation_msgs::GraspHandPostureExecutionGoal grasp_goal;
@@ -45,13 +45,13 @@ void collision_avoidance_pick_and_place::PickAndPlace::set_gripper(bool do_grasp
   if(success)
   {
     if (do_grasp)
-      ROS_INFO_STREAM("Gripper closed");
+      RCLCPP_INFO_STREAM(this->get_logger(), "Gripper closed");
     else
-      ROS_INFO_STREAM("Gripper opened");
+      RCLCPP_INFO_STREAM(this->get_logger(), "Gripper opened");
   }
   else
   {
-    ROS_ERROR_STREAM("Gripper failure");
+    RCLCPP_ERROR_STREAM(this->get_logger(), "Gripper failure");
     exit(1);
   }
 }

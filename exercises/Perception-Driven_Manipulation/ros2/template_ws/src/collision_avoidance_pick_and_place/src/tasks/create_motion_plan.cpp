@@ -14,13 +14,13 @@
 namespace collision_avoidance_pick_and_place
 {
 
-bool PickAndPlace::create_motion_plan(const geometry_msgs::Pose &pose_target,
-    const moveit_msgs::RobotState &start_robot_state,moveit::planning_interface::MoveGroupInterface::Plan &plan)
+bool PickAndPlace::create_motion_plan(const geometry_msgs::msg::Pose &pose_target,
+    const moveit_msgs::msg::RobotState &start_robot_state,moveit::planning_interface::MoveGroupInterface::Plan &plan)
 {
   // constructing motion plan goal constraints
   std::vector<double> position_tolerances(3,0.01f);
   std::vector<double> orientation_tolerances(3,0.01f);
-  geometry_msgs::PoseStamped p;
+  geometry_msgs::msg::PoseStamped p;
   p.header.frame_id = cfg.WORLD_FRAME_ID;
   p.pose = pose_target;
   moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(cfg.WRIST_LINK_NAME,p,position_tolerances,

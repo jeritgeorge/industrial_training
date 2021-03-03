@@ -8,10 +8,10 @@
     - Use the methods seen so far such as "move", "sendGoal", "waitForResult" whenever needed.
 */
 
-void collision_avoidance_pick_and_place::PickAndPlace::place_box(std::vector<geometry_msgs::Pose>& place_poses,
-        const geometry_msgs::Pose& box_pose)
+void collision_avoidance_pick_and_place::PickAndPlace::place_box(std::vector<geometry_msgs::msg::Pose>& place_poses,
+        const geometry_msgs::msg::Pose& box_pose)
 {
-  ROS_ERROR_STREAM("place_box is not implemented yet.  Aborting."); exit(1);
+  RCLCPP_ERROR_STREAM(this->get_logger(), "place_box is not implemented yet.  Aborting."); exit(1);
 
   // task variables
   bool success;
@@ -31,7 +31,7 @@ void collision_avoidance_pick_and_place::PickAndPlace::place_box(std::vector<geo
   // move the robot to each wrist place pose
   for(unsigned int i = 0; i < place_poses.size(); i++)
   {
-    moveit_msgs::RobotState robot_state;
+    moveit_msgs::msg::RobotState robot_state;
     if(i==0 || i == 1)
     {
       // attaching box
@@ -52,11 +52,11 @@ void collision_avoidance_pick_and_place::PickAndPlace::place_box(std::vector<geo
 
     if(success)
     {
-      ROS_INFO_STREAM("Place Move " << i <<" Succeeded");
+      RCLCPP_INFO_STREAM(this->get_logger(), "Place Move " << i <<" Succeeded");
     }
     else
     {
-      ROS_ERROR_STREAM("Place Move " << i <<" Failed");
+      RCLCPP_ERROR_STREAM(this->get_logger(), "Place Move " << i <<" Failed");
       set_gripper(false);
       exit(1);
     }

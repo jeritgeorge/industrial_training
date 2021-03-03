@@ -15,9 +15,9 @@
     - Use the "transform_from_tcp_to_wrist" function to populate the "wrist_pick_poses" array.
 */
 
-std::vector<geometry_msgs::Pose> collision_avoidance_pick_and_place::PickAndPlace::create_pick_moves(geometry_msgs::Pose &box_pose)
+std::vector<geometry_msgs::Pose> collision_avoidance_pick_and_place::PickAndPlace::create_pick_moves(geometry_msgs::msg::Pose &box_pose)
 {
-  ROS_ERROR_STREAM("create_pick_moves is not implemented yet.  Aborting."); exit(1);
+  RCLCPP_ERROR_STREAM(this->get_logger(), "create_pick_moves is not implemented yet.  Aborting."); exit(1);
 
   // task variables
   tf::Transform world_to_tcp_tf;
@@ -68,9 +68,9 @@ std::vector<geometry_msgs::Pose> collision_avoidance_pick_and_place::PickAndPlac
   /* ========  ENTER CODE HERE ======== */
 
   // printing some results
-  ROS_INFO_STREAM("tcp position at pick: " << "[" << world_to_tcp_tf.getOrigin().getX() << ", " << world_to_tcp_tf.getOrigin().getY() << ", " << world_to_tcp_tf.getOrigin().getZ() << "]");
-  ROS_INFO_STREAM("tcp z direction at pick: " << "[" << world_to_tcp_tf.getBasis().getColumn(2).getX() << ", " << world_to_tcp_tf.getBasis().getColumn(2).getY() << ", "  << world_to_tcp_tf.getBasis().getColumn(2).getZ() << "]");
-  ROS_INFO_STREAM("wrist position at pick: " << wrist_pick_poses[1].position);
+  RCLCPP_INFO_STREAM(this->get_logger(), "tcp position at pick: " << "[" << world_to_tcp_tf.getOrigin().getX() << ", " << world_to_tcp_tf.getOrigin().getY() << ", " << world_to_tcp_tf.getOrigin().getZ() << "]");
+  RCLCPP_INFO_STREAM(this->get_logger(), "tcp z direction at pick: " << "[" << world_to_tcp_tf.getBasis().getColumn(2).getX() << ", " << world_to_tcp_tf.getBasis().getColumn(2).getY() << ", "  << world_to_tcp_tf.getBasis().getColumn(2).getZ() << "]");
+  RCLCPP_INFO_STREAM(this->get_logger(), "wrist position at pick: " << wrist_pick_poses[1].position);
 
   return wrist_pick_poses;
 }

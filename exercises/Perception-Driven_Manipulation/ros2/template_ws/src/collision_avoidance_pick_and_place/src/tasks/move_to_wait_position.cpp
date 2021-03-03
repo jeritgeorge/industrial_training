@@ -14,7 +14,7 @@ using moveit::planning_interface::MoveItErrorCode;
 
 void collision_avoidance_pick_and_place::PickAndPlace::move_to_wait_position()
 {
-  ROS_ERROR_STREAM("move_to_wait_position is not implemented yet.  Aborting."); exit(1);
+  RCLCPP_ERROR_STREAM(this->get_logger(), "move_to_wait_position is not implemented yet.  Aborting."); exit(1);
 
   // task variables
   MoveItErrorCode error; // saves the move result
@@ -41,11 +41,11 @@ void collision_avoidance_pick_and_place::PickAndPlace::move_to_wait_position()
   /* ========  ENTER CODE HERE ======== */
   if(error == MoveItErrorCode::SUCCESS)
   {
-    ROS_INFO_STREAM("Move " << cfg.WAIT_POSE_NAME<< " Succeeded");
+    RCLCPP_INFO_STREAM(this->get_logger(), "Move " << cfg.WAIT_POSE_NAME<< " Succeeded");
   }
   else
   {
-    ROS_ERROR_STREAM("Move " << cfg.WAIT_POSE_NAME<< " Failed");
+    RCLCPP_ERROR_STREAM(this->get_logger(), "Move " << cfg.WAIT_POSE_NAME<< " Failed");
     exit(1);
   }
 }

@@ -15,7 +15,7 @@
 */
 void collision_avoidance_pick_and_place::PickAndPlace::pickup_box(std::vector<geometry_msgs::Pose>& pick_poses,const geometry_msgs::Pose& box_pose)
 {
-    ROS_ERROR_STREAM("pickup_box is not implemented yet.  Aborting."); exit(1);
+    RCLCPP_ERROR_STREAM(this->get_logger(), "pickup_box is not implemented yet.  Aborting."); exit(1);
 
     // task variables
     bool success;
@@ -52,14 +52,14 @@ void collision_avoidance_pick_and_place::PickAndPlace::pickup_box(std::vector<ge
     // move the robot to each wrist pick pose
     for(unsigned int i = 0; i < pick_poses.size(); i++)
     {
-      moveit_msgs::RobotState robot_state;
+      moveit_msgs::msg::RobotState robot_state;
 
     /* Inspect Code:
      * Goal:
      * - Look in the "set_attached_object()" method to understand
      * 	how to attach a payload using moveit.
      */
-    set_attached_object(false,geometry_msgs::Pose(),robot_state);
+    set_attached_object(false,geometry_msgs::msg::Pose(),robot_state);
 
 
     /* Inspect Code:
@@ -73,11 +73,11 @@ void collision_avoidance_pick_and_place::PickAndPlace::pickup_box(std::vector<ge
     // verifying move completion
     if(success)
     {
-      ROS_INFO_STREAM("Pick Move " << i <<" Succeeded");
+      RCLCPP_INFO_STREAM(this->get_logger(), "Pick Move " << i <<" Succeeded");
     }
     else
     {
-      ROS_ERROR_STREAM("Pick Move " << i <<" Failed");
+      RCLCPP_ERROR_STREAM(this->get_logger(), "Pick Move " << i <<" Failed");
       set_gripper(false);
       exit(1);
     }
