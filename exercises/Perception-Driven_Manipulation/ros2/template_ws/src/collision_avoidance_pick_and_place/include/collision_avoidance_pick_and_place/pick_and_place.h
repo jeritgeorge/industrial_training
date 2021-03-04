@@ -24,7 +24,7 @@ typedef boost::shared_ptr<tf::TransformListener> TransformListenerPtr;
 
 namespace collision_avoidance_pick_and_place
 {
-	class PickAndPlace
+	class PickAndPlace : public rclcpp::Node
 	{
 	public:
 	// =============================== constructor =====================================
@@ -35,10 +35,10 @@ namespace collision_avoidance_pick_and_place
 
 	// =============================== global members =====================================
 		pick_and_place_config cfg;
-		ros::Publisher marker_publisher;
-		ros::Publisher planning_scene_publisher;
-		ros::ServiceClient target_recognition_client;
-		ros::ServiceClient motion_plan_client;
+		rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_publisher;
+		rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr planning_scene_publisher;
+		rclcpp::Client<collision_avoidance_pick_and_place::srv::GetTargetPose>::SharedPtr target_recognition_client;
+		rclcpp::Client<moveit_msgs::srv::GetMotionPlan>::SharedPtr motion_plan_client;
 		GraspActionClientPtr grasp_action_client_ptr;
 		MoveGroupPtr move_group_ptr;
 		TransformListenerPtr transform_listener_ptr;

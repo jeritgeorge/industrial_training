@@ -21,9 +21,10 @@ moveit_msgs::Constraints create_path_orientation_constraints(const geometry_msgs
 		float x_tolerance,float y_tolerance,float z_tolerance,std::string link_name);
 
 
-class pick_and_place_config
+class PickAndPlaceConfig : public rclcpp::Node
 {
 public:
+
 
 	// =============================== Parameters ===============================
   std::string ARM_GROUP_NAME;  // MoveIt Planning Group associated with the robot arm
@@ -52,7 +53,7 @@ public:
   moveit_msgs::CollisionObject ATTACHED_OBJECT; // attached object message
   geometry_msgs::Pose TCP_TO_BOX_POSE;
 
-  pick_and_place_config()
+  PickAndPlaceConfig() : Node("pick_and_place_config")
   {
     ARM_GROUP_NAME  = "manipulator";
     TCP_LINK_NAME   = "tcp_frame";
