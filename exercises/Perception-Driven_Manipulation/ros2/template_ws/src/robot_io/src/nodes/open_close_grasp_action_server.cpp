@@ -37,41 +37,39 @@
  */
 
 
-#include <ros/ros.h>
-#include <actionlib/server/action_server.h>
-#include <object_manipulation_msgs/GraspHandPostureExecutionAction.h>
-#include <object_manipulation_msgs/GraspHandPostureExecutionGoal.h>
-#include <robot_io/DigitalOutputUpdate.h>
-#include <soem_beckhoff_drivers/DigitalMsg.h>
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include <object_manipulation_msgs/msg/GraspHandPostureExecutionAction.h>
+#include <object_manipulation_msgs/msg/GraspHandPostureExecutionGoal.h>
+#include <robot_io/srv/DigitalOutputUpdate.h>
+#include <soem_beckhoff_drivers/msg/DigitalMsg.h>
 
 using namespace object_manipulation_msgs;
 using namespace actionlib;
 
 
-typedef robot_io::DigitalOutputUpdate::Request DigitalOutputType;
+typedef robot_io::srv::DigitalOutputUpdate::Request DigitalOutputType;
 
 static const std::string OUTPUT_TOPIC = "/digital_outputs";
 static const std::string INPUT_TOPIC = "/digital_inputs";
 static const std::string OUTPUT_SERVICE = "/digital_output_update";
 
-class SimpleGraspActionServer
+class SimpleGraspActionServer : pubic rclcpp::Node
 {
 private:
   typedef ActionServer<GraspHandPostureExecutionAction> GEAS;
   typedef GEAS::GoalHandle GoalHandle;
 
 public:
-  SimpleGraspActionServer(ros::NodeHandle &n) :
-    node_(n),
-    action_server_(node_, "grasp_execution_action",
-                   boost::bind(&SimpleGraspActionServer::goalCB, this, _1),
-                   boost::bind(&SimpleGraspActionServer::cancelCB, this, _1),
-                   false),
-   use_sensor_feedback_(false),
+  SimpleGraspActionServer() : Node("grasp_execution_action_node"),
+	use_sensor_feedback_(false),
    suction_on_output_channel_(DigitalOutputType::SUCTION1_ON),
    suction_check_input_channel_(DigitalOutputType::SUCTION1_ON)
   {
-
+	this->action_server_ = rclcpp_action::create_server<GraspHandPostureExecutionAction>
+	(this, "grasp_execution_action",
+	std::bind(&GraspExecutionAction::goalCB, this, _1),
+	std::bind(&GraspExecutionAction::cancelCB, this, _1));
   }
 
   ~SimpleGraspActionServer()
@@ -80,32 +78,34 @@ public:
 
   void init()
   {
-	    ros::NodeHandle pn("/");
-	    std::string nodeName = ros::this_node::getName();
+	    std::string nodeName = this->get_name();
 
 	    // service client
-	    service_client_ = pn.serviceClient<robot_io::DigitalOutputUpdate>(OUTPUT_SERVICE);
-	    while(!service_client_.waitForExistence(ros::Duration(5.0f)))
+	    service_client_ = this->create_client<robot_io::srv::DigitalOutputUpdate>(OUTPUT_SERVICE);
+	    while(!service_client_->wait_for_service(1s))
 	    {
-	    	ROS_INFO_STREAM(nodeName<<": Waiting for "<<OUTPUT_SERVICE<<" to start");
+			if (!rclcpp::ok())
+			{
+				RCLCPP_ERROR_STREAM(this->get_logger(), nodeName<<": Waiting for "<<OUTPUT_SERVICE<<" to start");
+			}
+			RCLCPP_INFO_STREAM(this->get_logger(), "service not available, waiting again...");
 	    }
 
 	    if(!fetchParameters() )
 	    {
-	    	ROS_ERROR_STREAM(nodeName<<": Did not find required ros parameters, exiting");
-	    	ros::shutdown();
+	    	RCLCPP_ERROR_STREAM(this->get_logger(), nodeName<<": Did not find required ros parameters, exiting");
+	    	rclcpp::shutdown();
 	    	return;
 	    }
 
 	    if(!validateChannelIndices())
 	    {
-	    	ROS_ERROR_STREAM(nodeName<<": One or more parameter values are invalid");
-	    	ros::shutdown();
+	    	RCLCPP_ERROR_STREAM(this->get_logger(), nodeName<<": One or more parameter values are invalid");
+	    	rclcpp::shutdown();
 	    	return;
 	    }
 
-	    action_server_.start();
-	    ROS_INFO_STREAM(nodeName<<": Grasp execution action node started");
+	    RCLCPP_INFO_STREAM(this->get_logger(), nodeName<<": Grasp execution action node started");
   }
 
 private:
@@ -113,12 +113,12 @@ private:
 
   void goalCB(GoalHandle gh)
   {
-    std::string nodeName = ros::this_node::getName();
+    std::string nodeName = this->get_name();
 
-    ROS_INFO("%s",(nodeName + ": Received grasping goal").c_str());
+    RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Received grasping goal").c_str());
 
-    robot_io::DigitalOutputUpdate::Request req;
-    robot_io::DigitalOutputUpdate::Response res;
+    robot_io::srv::DigitalOutputUpdate::Request req;
+    robot_io::srv::DigitalOutputUpdate::Response res;
     bool success;
 
 	switch(gh.getGoal()->goal)
@@ -126,7 +126,7 @@ private:
 		case GraspHandPostureExecutionGoal::PRE_GRASP:
 
 			gh.setAccepted();
-			ROS_INFO_STREAM(nodeName + ": Pre-grasp command accepted");
+			RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Pre-grasp command accepted");
 
 			req.bit_index = suction_on_output_channel_;
 			req.output_bit_state = true;
@@ -134,12 +134,12 @@ private:
 			if(service_client_.call(req,res))
 			{
 				gh.setSucceeded();
-				ROS_INFO_STREAM(nodeName + ": Pre-grasp command succeeded");
+				RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Pre-grasp command succeeded");
 			}
 			else
 			{
 				gh.setAborted();
-				ROS_INFO_STREAM(nodeName + ": Pre-grasp command aborted");
+				RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Pre-grasp command aborted");
 			}
 
 
@@ -148,7 +148,7 @@ private:
 		case GraspHandPostureExecutionGoal::GRASP:
 
 			gh.setAccepted();
-			ROS_INFO_STREAM(nodeName + ": Grasp command accepted");
+			RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Grasp command accepted");
 
 			req.bit_index = suction_on_output_channel_;
 			req.output_bit_state = false;
@@ -159,25 +159,25 @@ private:
 				if(use_sensor_feedback_ && !checkSensorState())
 				{
 					gh.setAborted();
-					ROS_INFO_STREAM(nodeName + ": Grasp command aborted");
+					RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Grasp command aborted");
 					break;
 				}
 			}
 			else
 			{
 				gh.setAborted();
-				ROS_INFO_STREAM(nodeName + ": Grasp command aborted");
+				RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Grasp command aborted");
 				break;
 			}
 
 			gh.setSucceeded();
-			ROS_INFO_STREAM(nodeName + ": Grasp command succeeded");
+			RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Grasp command succeeded");
 			break;
 
 		case GraspHandPostureExecutionGoal::RELEASE:
 
 			gh.setAccepted();
-			ROS_INFO_STREAM(nodeName + ": Release command accepted");
+			RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Release command accepted");
 
 			req.bit_index = suction_on_output_channel_;
 			req.output_bit_state = true;
@@ -185,19 +185,19 @@ private:
 			if(service_client_.call(req,res))
 			{
 				gh.setSucceeded();
-				ROS_INFO_STREAM(nodeName + ": Release command succeeded");
+				RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Release command succeeded");
 			}
 			else
 			{
 				gh.setAborted();
-				ROS_INFO_STREAM(nodeName + ": Release command aborted");
+				RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Release command aborted");
 			}
 
 			break;
 
 		default:
 
-			ROS_WARN_STREAM(nodeName + ": Unidentified grasp request, rejecting request");
+			RCLCPP_WARN_STREAM(this->get_logger(),nodeName + ": Unidentified grasp request, rejecting request");
 			gh.setRejected();
 			break;
 	}
@@ -207,9 +207,9 @@ private:
   void cancelCB(GoalHandle gh)
   {
     std::string nodeName = ros::this_node::getName();
-	ROS_INFO_STREAM(nodeName + ": Canceling current grasp action");
+	RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Canceling current grasp action");
     gh.setCanceled();
-    ROS_INFO_STREAM(nodeName + ": Current grasp action has been canceled");
+    RCLCPP_INFO_STREAM(this->get_logger(), nodeName + ": Current grasp action has been canceled");
   }
 
   bool fetchParameters()
@@ -258,9 +258,8 @@ private:
   }
 
   // ros comm
-  ros::NodeHandle node_;
   GEAS action_server_;
-  ros::ServiceClient service_client_;
+  rclcpp::Client<robot_io::srv::DigitalOutputUpdate>::SharedPtr service_client_;
 
   // ros parameters
   int suction_on_output_channel_; // index value to output channel for suction
@@ -271,11 +270,9 @@ private:
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "grasp_execution_action_node");
-	ros::NodeHandle node("");
-	SimpleGraspActionServer ge(node);
-	ge.init();
-	ros::spin();
+	rclcpp::init(argc, argv);
+	rclcpp::spin(std::make_shared<SimpleGraspActionServer>());
+	rclcpp::shutdown();
   return 0;
 }
 

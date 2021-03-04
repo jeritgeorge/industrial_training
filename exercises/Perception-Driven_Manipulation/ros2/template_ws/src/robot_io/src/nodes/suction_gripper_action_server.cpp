@@ -30,12 +30,12 @@
  */
 
 
-#include <ros/ros.h>
-#include <actionlib/server/action_server.h>
-#include <object_manipulation_msgs/GraspHandPostureExecutionAction.h>
-#include <object_manipulation_msgs/GraspHandPostureExecutionGoal.h>
-#include <ur_msgs/SetIO.h>
-#include <ur_msgs/IOStates.h>
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include <object_manipulation_msgs/msg/GraspHandPostureExecutionAction.h>
+#include <object_manipulation_msgs/msg/GraspHandPostureExecutionGoal.h>
+#include <ur_msgs/msg/SetIO.h>
+#include <ur_msgs/msg/IOStates.h>
 using namespace object_manipulation_msgs;
 using namespace actionlib;
 
@@ -46,19 +46,14 @@ static const unsigned int IO_PIN_COUNT = 8;
 static const int DEFAULT_SUCTION_COMMAND_PIN = 0;
 static const int DEFAULT_SUCTION_STATE_PIN = 1;
 
-class SuctionGripperActionServer
+class SuctionGripperActionServer : public rclcpp::Node
 {
 private:
   typedef ActionServer<GraspHandPostureExecutionAction> GEAS;
   typedef GEAS::GoalHandle GoalHandle;
 
 public:
-  SuctionGripperActionServer(ros::NodeHandle &n) :
-    node_(n),
-    action_server_(node_, "grasp_execution_action",
-                   boost::bind(&SuctionGripperActionServer::action_goal_callback, this, _1),
-                   boost::bind(&SuctionGripperActionServer::action_cancel_callback, this, _1),
-                   false),
+  SuctionGripperActionServer() : Node("grasp_execution_action_node"),
    check_state_pin_(false),
    suction_command_pin_(DEFAULT_SUCTION_COMMAND_PIN),
    suction_state_pin_(DEFAULT_SUCTION_STATE_PIN)

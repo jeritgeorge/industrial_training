@@ -5,9 +5,9 @@
  *      Author: jnicho
  */
 
-#include <ros/ros.h>
-#include <robot_io/DigitalOutputUpdate.h>
-#include <soem_beckhoff_drivers/DigitalMsg.h>
+#include "rclcpp/rclcpp.hpp"
+#include <robot_io/srv/DigitalOutputUpdate.h>
+#include <soem_beckhoff_drivers/msg/DigitalMsg.h>
 
 static const std::string OUTPUT_TOPIC = "/digital_outputs";
 static const std::string OUTPUT_SERVICE = "/digital_output_update";

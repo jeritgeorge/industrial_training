@@ -29,31 +29,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#include <ros/ros.h>
-#include <actionlib/server/action_server.h>
-#include <object_manipulation_msgs/GraspHandPostureExecutionAction.h>
-#include "object_manipulation_msgs/GraspHandPostureExecutionGoal.h"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include <object_manipulation_msgs/msg/GraspHandPostureExecutionAction.h>
+#include "object_manipulation_msgs/msg/GraspHandPostureExecutionGoal.h"
 
 using namespace object_manipulation_msgs;
 using namespace actionlib;
 
-class GraspExecutionAction
+class GraspExecutionAction : public rclcpp::Node
 {
 private:
   typedef ActionServer<GraspHandPostureExecutionAction> GEAS;
   typedef GEAS::GoalHandle GoalHandle;
 public:
-  GraspExecutionAction(ros::NodeHandle &n) :
-    node_(n),
-    action_server_(node_, "grasp_execution_action",
-                   boost::bind(&GraspExecutionAction::goalCB, this, _1),
-                   boost::bind(&GraspExecutionAction::cancelCB, this, _1),
-                   false)
+  GraspExecutionAction()
+  : Node("grasp_execution_action_node")
   {
-    ros::NodeHandle pn("~");
-    action_server_.start();
-    ROS_INFO_STREAM("Grasp execution action node started");
+    this->action_server_ = rclcpp_action::create_server<GraspHandPostureExecutionAction>
+		(this, "grasp_execution_action",
+		std::bind(&GraspExecutionAction::goalCB, this, _1),
+		std::bind(&GraspExecutionAction::cancelCB, this, _1));
+
+    RCLCPP_INFO_STREAM(this->get_logger(), "Grasp execution action node started");
   }
 
   ~GraspExecutionAction()
@@ -65,22 +63,22 @@ private:
 
   void goalCB(GoalHandle gh)
   {
-    std::string nodeName = ros::this_node::getName();
+    std::string nodeName = this->get_name();
 
-    ROS_INFO("%s",(nodeName + ": Received grasping goal").c_str());
+    RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Received grasping goal").c_str());
 
 	switch(gh.getGoal()->goal)
 	{
 		case GraspHandPostureExecutionGoal::PRE_GRASP:
 			gh.setAccepted();
 			//gh.getGoal()->grasp
-			ROS_INFO("%s",(nodeName + ": Pre-grasp command accepted").c_str());
+			RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Pre-grasp command accepted").c_str());
 			gh.setSucceeded();
 			break;
 
 		case GraspHandPostureExecutionGoal::GRASP:
 			gh.setAccepted();
-			ROS_INFO("%s",(nodeName + ": Executing a gripper grasp").c_str());
+			RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Executing a gripper grasp").c_str());
 
 			// wait
 			ros::Duration(0.25f).sleep();
@@ -89,7 +87,7 @@ private:
 
 		case GraspHandPostureExecutionGoal::RELEASE:
 			gh.setAccepted();
-			ROS_INFO("%s",(nodeName + ": Executing a gripper release").c_str());
+			RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Executing a gripper release").c_str());
 
 			// wait
 			ros::Duration(0.25f).sleep();
@@ -98,7 +96,7 @@ private:
 
 		default:
 
-			ROS_INFO("%s",(nodeName + ": Unidentified grasp request, rejecting goal").c_str());
+			RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Unidentified grasp request, rejecting goal").c_str());
 			gh.setSucceeded();
 			//gh.setRejected();
 			break;
@@ -108,24 +106,22 @@ private:
 
   void cancelCB(GoalHandle gh)
   {
-    std::string nodeName = ros::this_node::getName();
-	ROS_INFO("%s",(nodeName + ": Canceling current grasp action").c_str());
+    std::string nodeName = this->get_name();
+	RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Canceling current grasp action").c_str());
     //gh.setAccepted();
     gh.setCanceled();
-    ROS_INFO("%s",(nodeName + ": Current grasp action has been canceled").c_str());
+    RCLCPP_INFO(this->get_logger(), "%s",(nodeName + ": Current grasp action has been canceled").c_str());
   }
 
-  ros::NodeHandle node_;
-  GEAS action_server_;
+  rclcpp_action::Server<GEAS>::SharedPtr action_server_;
 
 };
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "grasp_execution_action_node");
-	ros::NodeHandle node;
-	GraspExecutionAction ge(node);
-	ros::spin();
+	rclcpp::init(argc, argv);
+	rclcpp::spin(std::make_shared<GraspExecutionAction>());
+	rclcpp::shutdown();
   return 0;
 }
 
